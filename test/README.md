@@ -42,9 +42,9 @@ or offline deployments. SSMS and source-data providers must also be provisioned
 separately.
 
 The manifest still declares PowerShell 5.0; the automatic validation target is
-5.1, not 5.0 or general PowerShell 7 support. `HelpInfoURI` points to the online
-Markdown documentation; the repository does not provide an Updatable Help
-HelpInfo XML/CAB endpoint for `Update-Help`. Some generated command-help pages
+5.1, not 5.0 or general PowerShell 7 support. The repository does not provide an
+Updatable Help HelpInfo XML/CAB endpoint for `Update-Help`; no `HelpInfoURI` is
+declared. Some generated command-help pages
 and embedded help retain historical project links; author/copyright credits
 remain unchanged. The dated modernization assessment is historical, not the
 current CI or compatibility matrix.

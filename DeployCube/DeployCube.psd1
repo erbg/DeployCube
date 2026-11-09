@@ -89,8 +89,5 @@ PrivateData = @{
 
 } # End of PrivateData hashtable
 
-# HelpInfo URI of this module
-HelpInfoURI = 'https://github.com/erbg/DeployCube/tree/master/docs'
-
 }
 

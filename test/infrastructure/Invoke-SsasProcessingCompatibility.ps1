@@ -42,6 +42,7 @@ function Publish-ProcessingFixture {
     $server.Refresh($true)
     $database = $server.Databases.FindByName($Name)
     if (-not $database) { throw "Publish-Cube returned without creating '$Name'." }
+    $report.DatabaseExistsAfterPublish = $true
     $metadata = Assert-MultidimensionalMetadata -Database $database
     $metadata | ConvertTo-Json | Set-Content -LiteralPath (Join-Path (Split-Path -Parent $path) 'deployed-metadata.json') -Encoding UTF8
     return $path

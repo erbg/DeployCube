@@ -33,6 +33,7 @@ $report = @{
     Fixture = 'Not tested'
     ModelCompatibilityLevel = $null
     PublishCube = 'Not tested'
+    DatabaseExistsAfterPublish = $false
     ProcessingCommand = 'Publish-Cube -ProcessingOption Full'
     Processing = 'Not tested'
     ProcessingDurationSeconds = $null
@@ -259,6 +260,7 @@ REVERT;
     $tomServer = New-Object Microsoft.AnalysisServices.Tabular.Server
     $tomServer.Connect('localhost\DCUBE')
     $tabularDatabase = $tomServer.Databases.FindByName($databaseNames[0])
+    $report.DatabaseExistsAfterPublish = [bool]$tabularDatabase
     $table = if ($tabularDatabase) { $tabularDatabase.Model.Tables.Find('Fact') }
     $partition = if ($table) { $table.Partitions.Find('Fact') }
     $measure = if ($table) { $table.Measures.Find('Total Amount') }

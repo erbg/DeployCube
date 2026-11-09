@@ -57,6 +57,95 @@ in this matrix. The known Multidimensional `.configsettings` defect
 ([assessment F01](MODERNIZATION_ASSESSMENT.md)) remains a product blocker and
 was not changed here.
 
+### Experimental native PowerShell 7 SSAS integration
+
+#### Existing execution boundary and dependencies
+
+The existing SSAS workflow's provisioning steps use the Windows PowerShell
+runner shell. Its Phase G and H processing steps explicitly launch
+`$PSHOME/powershell.exe`, so those prior processing passes are Windows
+PowerShell 5.1 results. The four infrastructure scripts
+[`Invoke-SsasCompatibility.ps1`](../test/infrastructure/Invoke-SsasCompatibility.ps1),
+[`Invoke-SsasProcessingCompatibility.ps1`](../test/infrastructure/Invoke-SsasProcessingCompatibility.ps1),
+[`Invoke-SsasTabularProcessing.ps1`](../test/infrastructure/Invoke-SsasTabularProcessing.ps1),
+and [`Initialize-ProcessingSource.ps1`](../test/infrastructure/Initialize-ProcessingSource.ps1)
+do not themselves hard-code `powershell.exe`; that makes them callable from
+PowerShell 7, but does not prove that their dependencies work there.
+
+The live path has separate Windows-specific dependencies: the SSMS-installed
+`Microsoft.AnalysisServices.Deployment.exe`; the SqlServer module and
+`Invoke-ASCmd`; AMO/TOM assemblies; Windows integrated authentication; the
+registered `MSOLEDBSQL` OLE DB provider; and SSAS/XMLA full processing with
+DAX or MDX query verification. The existing Phase C-F deployment checks verify
+real database deployment and removal but do not process models. Before this
+experiment, the main unverified compatibility boundary was loading and using
+SqlServer/AMO from PowerShell 7 while DeployCube's functions ran in that same
+runtime.
+
+The manually triggered
+[PowerShell 7 SSAS integration workflow](../.github/workflows/powershell7-ssas-integration.yml)
+selects one PowerShell patch and one SSAS mode per run. It tests PowerShell
+**7.4.22** or **7.5.13** with SSAS 2022 Developer, SSMS 22's Deployment Utility,
+Tabular compatibility level **1500**, or Multidimensional compatibility level
+**1100**. It has no pull-request or push trigger. The called
+[SSAS compatibility workflow](../.github/workflows/ssas-compatibility.yml)
+reuses the existing media download/verification, SSMS and SSAS installers,
+service verification, isolated SQL source provisioning, and cleanup.
+
+Runner provisioning and its cleanup use Windows PowerShell 5.1 where required.
+The integration runner itself is launched by the selected `pwsh.exe`, verifies
+its exact version and Core edition, then invokes the existing DeployCube
+processing test script in that same process. It records SqlServer module and
+`Invoke-ASCmd` metadata, loaded AMO assemblies, .NET runtime, SSAS and utility
+versions, Windows authentication identity, deployment, full processing,
+numeric DAX/MDX verification, and cleanup. It reports separately whether the
+SqlServer module appears loaded in-process or through a Windows PowerShell
+compatibility mechanism. A compatibility-module result is not described as
+native PowerShell 7 support.
+
+Each result must show successful database deployment, full processing, query
+value **10**, and verified `Unpublish-Cube` cleanup; source provisioning and
+cleanup must also pass before the overall run is marked validated. Failures are
+classified as PowerShell 7 compatibility, missing dependency, authentication,
+Deployment Utility, SSAS processing, or infrastructure/installation problems.
+In particular, media-download and SSMS/SSAS installation failures are not
+counted as PowerShell compatibility failures. Diagnostic artifacts are uploaded
+even when a workflow step fails.
+
+| PowerShell / SSAS mode | Model level | Real deployment | Full processing | DAX/MDX result | Cleanup | Evidence |
+|---|---:|---|---|---|---|---|
+| 7.4.22 / Tabular | 1500 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
+| 7.4.22 / Multidimensional | 1100 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
+| 7.5.13 / Tabular | 1500 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
+| 7.5.13 / Multidimensional | 1100 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
+
+#### Compatibility assessment and next steps
+
+The existing baseline remains Windows PowerShell 5.1; its live 2022 Tabular and
+Multidimensional processing evidence is recorded in
+[run 40895275965](https://github.com/erbg/DeployCube/actions/runs/40895275965)
+and [run 40856087729](https://github.com/erbg/DeployCube/actions/runs/40856087729).
+The Windows PowerShell 7 syntax, analyzer, unit, coverage, and package checks
+listed above are not SSAS deployment evidence.
+
+**Native Windows PowerShell 7 deployment is currently unverified.** Until every
+required live-workflow stage passes, no PowerShell 7 / SSAS configuration is
+validated and it is not yet possible to conclude that production functions or
+SqlServer/AMO require changes. The workflow report is intended to identify
+whether any observed blocker is in the module, dependency loading,
+authentication, the external Deployment Utility, or SSAS processing. Do not
+change production functions or make a support declaration based on the
+infrastructure-only results.
+
+If a cell passes with the module and `Invoke-ASCmd` loaded in the PowerShell 7
+process, it is evidence for native Windows PowerShell 7 execution for that
+exact tuple. If SqlServer requires a compatibility session, document it as
+PowerShell 7 using compatibility mechanisms; if deployment/processing fails,
+fix only the evidenced blocker while preserving the Windows PowerShell 5.1
+gate. Linux remote orchestration remains a separate future project: it may be
+feasible as a control plane dispatching to an isolated Windows worker, but this
+workflow does not validate Linux connectivity or direct Linux deployment.
+
 ## Linux orchestration and remote SSAS feasibility
 
 Linux-based orchestration is plausible as a future control plane, but it is not

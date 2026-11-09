@@ -30,6 +30,25 @@ Windows CI: OLE DB cases are Windows-only. One known-defect Multidimensional
 `.configsettings` test remains skipped (assessment F01); this change does not
 repair production deployment behavior.
 
+## Dependency and metadata limits
+
+The test-tool versions above are deliberate reproducibility pins, not a promise
+to track the newest Gallery release. Do not upgrade them without rerunning the
+Windows PowerShell 5.1 gates. The runtime `SqlServer` module is separate:
+`Get-ModuleByName` installs it only when needed and absent, without a version
+constraint. Unit tests mock that boundary, so they do not certify every
+`SqlServer`/AMO/provider version. Preinstall a validated version for controlled
+or offline deployments. SSMS and source-data providers must also be provisioned
+separately.
+
+The manifest still declares PowerShell 5.0; the automatic validation target is
+5.1, not 5.0 or general PowerShell 7 support. The repository does not provide an
+Updatable Help HelpInfo XML/CAB endpoint for `Update-Help`; no `HelpInfoURI` is
+declared. Some generated command-help pages
+and embedded help retain historical project links; author/copyright credits
+remain unchanged. The dated modernization assessment is historical, not the
+current CI or compatibility matrix.
+
 ## Unit versus integration tests
 
 [TestSelection.psd1](TestSelection.psd1) is the explicit automatic test selection:
@@ -105,7 +124,7 @@ Outputs in ignored `TestResults/`:
 - In CI, runtime and dependency-version diagnostics.
 
 PR #17's 92.33% is historical, not the current result. The verified Phase J
-[Windows 5.1 run](https://github.com/DrJohnT/DeployCube/actions/runs/41047961303)
+[Windows 5.1 run](https://github.com/erbg/DeployCube/actions/runs/41047961303)
 measured **393/428 commands (91.82%)**; Linux measured 377/428 (88.08%) because
 the OLE DB cases require Windows. Windows CI is authoritative. Compare runs
 using the same scope and engine. Coverage changes with module code; do not
@@ -157,7 +176,8 @@ workflows keep their existing configuration documented separately.
 
 ## Troubleshooting
 
-- **Dependencies:** confirm the exact versions in `dependencies.txt`; rerun
+- **Dependencies:** confirm the pins in `RequiredModules.psd1` and the versions
+  recorded by CI in `TestResults/dependencies.txt`; rerun
   bootstrap after resolving Gallery/network errors. Do not change versions or
   hide analyzer failures behind retries.
 - **Analyzer:** open `TestResults-Analyzer.xml` and the job log to locate the

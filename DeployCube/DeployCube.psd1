@@ -27,7 +27,7 @@ CompanyName = 'Decision Analytics'
 Copyright = '(c) 2019-2021 Dr. John Tunnicliffe. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Provides utilities to help you deploy your Analysis Services cube to Azure or your on-premise servers.  Supports both Tabular and Multidimensional projects.  Full documentation can be found on the project site https://github.com/DrJohnT/DeployCube'
+Description = 'Provides utilities to help you deploy your Analysis Services cube to Azure or your on-premise servers.  Supports both Tabular and Multidimensional projects.  Full documentation can be found on the project site https://github.com/erbg/DeployCube'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.0'
@@ -71,26 +71,23 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @("SSST","deployment","tabular","deploy","multidimenstional","SQL","database","sqlserver","Profile","Azure","DevOps","powershell","pipeline","release")
+        Tags = @("SSST","deployment","tabular","deploy","multidimensional","SQL","database","sqlserver","Profile","Azure","DevOps","powershell","pipeline","release")
 
         # A URL to the license for this module.
-        LicenseUri = 'https://raw.githubusercontent.com/DrJohnT/DeployCube/master/DeployCube/LICENSE'
+        LicenseUri = 'https://github.com/erbg/DeployCube/blob/master/DeployCube/LICENSE'
 
         # A URL to the main website for this project.
-        ProjectUri = 'https://github.com/DrJohnT/DeployCube'
+        ProjectUri = 'https://github.com/erbg/DeployCube'
 
         # A URL to an icon representing this module.
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'https://github.com/DrJohnT/DeployCube/releases/tag/1.2.0'
+        ReleaseNotes = 'https://github.com/erbg/DeployCube/releases'
 
     } # End of PSData hashtable
 
 } # End of PrivateData hashtable
-
-# HelpInfo URI of this module
-HelpInfoURI = 'https://github.com/DrJohnT/DeployCube'
 
 }
 

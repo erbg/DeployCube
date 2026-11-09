@@ -11,6 +11,80 @@ The [SSMS workflow](../.github/workflows/ssms-compatibility.yml) and
 `workflow_dispatch`-only. The compatibility evidence below comes from those
 manually triggered integration runs, not from the automatic unit-test gate.
 
+## Experimental PowerShell 7 compatibility
+
+The separate [PowerShell 7 workflow](../.github/workflows/powershell-7-compatibility.yml)
+tests PowerShell **7.4.22** and **7.5.13** on independent Windows Server 2022
+runners. It runs on pull requests touching module, test, or compatibility
+workflow files and can also be started manually. Each job downloads the official
+Windows x64 ZIP and verifies its pinned SHA-256 before running syntax/manifest,
+PSScriptAnalyzer, isolated unit/coverage, and local-package validation.
+Artifacts are uploaded even when validation fails.
+
+This is experimental runtime coverage, not a support declaration. It does not
+change the Windows PowerShell 5.1 CI/release gates, production workflows, module
+manifest, public behavior, or module/test dependency versions. Windows PowerShell
+5.1 remains the certified CI target; Windows PowerShell 7 results must be
+reviewed per dependency and platform boundary.
+
+### Results collected on 2026-11-09
+
+The available local host was Linux x64 with PowerShell **7.6.9**, Pester
+**5.7.1**, and PSScriptAnalyzer **1.24.0**. This is a useful cross-platform
+unit/syntax check, but is not a Windows PowerShell 7.4/7.5 result.
+
+| Runtime / host | Syntax and manifest | Analyzer | Unit tests / coverage | Local package |
+|---|---|---|---|---|
+| PowerShell 7.6.9 / Linux x64 | Passed; 101 PowerShell files parsed | Passed; 1,951 passed, 0 failed | Passed; 389 passed, 0 failed, 4 skipped; 377/428 commands (88.08%, threshold 75%) | Passed; `DeployCube.1.2.6.nupkg` built and inspected, not published |
+| [PowerShell 7.4.22 / Windows Server 2022](https://github.com/erbg/DeployCube/actions/runs/42703818689/job/129455231778) | Passed; 101 PowerShell files parsed | Passed; 1,951 passed, 0 failed | Passed; 392 passed, 0 failed, 1 skipped; 393/428 commands (91.82%, threshold 75%) | Passed; `DeployCube.1.2.6.nupkg` built and inspected, not published |
+| [PowerShell 7.5.13 / Windows Server 2022](https://github.com/erbg/DeployCube/actions/runs/42703818689/job/129455231287) | Passed; 101 PowerShell files parsed | Passed; 1,951 passed, 0 failed | Passed; 392 passed, 0 failed, 1 skipped; 393/428 commands (91.82%, threshold 75%) | Passed; `DeployCube.1.2.6.nupkg` built and inspected, not published |
+
+The four local skips include the Windows-only OLE DB cases; Linux coverage is
+not interchangeable with Windows coverage. The Linux unit result does not
+exercise SSAS, AMO server connectivity, deployment-utility execution, Windows
+authentication, or source-provider availability.
+
+The Windows 7.4/7.5 results establish that the isolated syntax, analyzer, unit,
+coverage, and local-package gates pass on these exact runtime patches. They do
+not include live SSAS deployment or processing, and do not change the module's
+support declaration. The existing [Windows PowerShell 5.1 CI job](https://github.com/erbg/DeployCube/actions/runs/42703818270/job/129455229939)
+also passed on the same pull request.
+
+No PowerShell 7.4/7.5 blocker appeared in the tested gates. End-to-end
+compatibility remains unproven: AMO/SqlServer loading and authentication,
+Deployment Utility execution, and real SSAS deployment/processing were not run
+in this matrix. The known Multidimensional `.configsettings` defect
+([assessment F01](MODERNIZATION_ASSESSMENT.md)) remains a product blocker and
+was not changed here.
+
+## Linux orchestration and remote SSAS feasibility
+
+Linux-based orchestration is plausible as a future control plane, but it is not
+equivalent to running DeployCube's current deployment path on Linux:
+
+- The module's deployment path discovers and starts
+  `Microsoft.AnalysisServices.Deployment.exe`; that Windows executable and its
+  SSMS installation layout are not available to a Linux runner. A Linux
+  orchestrator could dispatch work to a secured Windows deployment runner, but
+  DeployCube does not currently implement that orchestration boundary.
+- Several module commands use `Invoke-ASCmd` or AMO to contact a named SSAS
+  server. Their presence does not establish that the exact SqlServer/AMO
+  assemblies, authentication modes, or native connectivity dependencies work
+  on Linux. Remote connectivity from Linux remains unverified.
+- Source connection-string handling uses `System.Data.OleDb` and SQLNCLI11.
+  Processing also depends on the source provider being available to the SSAS
+  service identity on the server. These are separate constraints from where a
+  workflow is orchestrated.
+
+For a future Linux orchestration experiment, keep the deployment client on
+Windows initially and use an explicitly isolated remote SSAS target. Before
+claiming direct Linux deployment support, test the exact SqlServer/AMO versions,
+server endpoint and firewall path, authentication, deployment utility boundary,
+source-provider placement, metadata publish/remove, and real processing/query
+results. Current evidence supports Linux for some isolated validation and as a
+potential orchestrator only; it does not support full Linux deployment or
+direct remote SSAS compatibility.
+
 ## SSMS installation and discovery
 
 The SSMS workflow is a manual, experimental matrix of independent GitHub-hosted Windows Server 2022 runners. Each matrix job installs exactly one SSMS version (20, 21, or 22), uses Windows PowerShell 5.1, makes no production connections, and leaves existing CI unchanged. It inventories the actual deployment utility executable and records its file/product version and path; SSMS major numbers are never used as a substitute for the executable's metadata.

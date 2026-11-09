@@ -1,0 +1,98 @@
+name: Experimental PowerShell 7 compatibility
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/powershell-7-compatibility.yml'
+      - 'DeployCube/**'
+      - 'test/**'
+      - 'docs/COMPATIBILITY_TESTING.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: powershell-7-compatibility-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    name: Windows PowerShell ${{ matrix.version }} experimental validation
+    runs-on: windows-2022
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: '7.4.22'
+            sha256: '5f89f51860a1a3b07937945663afd7cbd44387361ff9985f5758939cb9bd6359'
+          - version: '7.5.13'
+            sha256: '120b8f0b04f3b3f6e8c351ddbe568bf596cdca15eeb2ecb7e724060051a36d65'
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download and verify PowerShell ${{ matrix.version }}
+        run: |
+          $version = '${{ matrix.version }}'
+          $archiveName = "PowerShell-$version-win-x64.zip"
+          $archivePath = Join-Path $env:RUNNER_TEMP $archiveName
+          $downloadUri = "https://github.com/PowerShell/PowerShell/releases/download/v$version/$archiveName"
+          Invoke-WebRequest -Uri $downloadUri -OutFile $archivePath -ErrorAction Stop
+          $actualHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne '${{ matrix.sha256 }}') {
+            throw "PowerShell $version archive SHA-256 mismatch: $actualHash"
+          }
+          $installPath = Join-Path $env:RUNNER_TEMP "pwsh-$version"
+          Expand-Archive -LiteralPath $archivePath -DestinationPath $installPath -Force
+          $executable = Join-Path $installPath 'pwsh.exe'
+          $actualVersion = & $executable -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
+          if ($LASTEXITCODE -ne 0 -or $actualVersion -ne $version) {
+            throw "Expected PowerShell $version; found '$actualVersion'."
+          }
+          "POWERSHELL_EXE=$executable" | Add-Content -LiteralPath $env:GITHUB_ENV
+          Write-Host "Verified PowerShell $actualVersion ($actualHash)"
+
+      - name: Install pinned test dependencies
+        run: |
+          & $env:POWERSHELL_EXE -NoLogo -NoProfile -File ./test/bootstrap.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Installing pinned test dependencies failed.' }
+
+      - name: Validate PowerShell syntax
+        run: |
+          & $env:POWERSHELL_EXE -NoLogo -NoProfile -File ./test/Test-PowerShellSyntax.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'PowerShell syntax validation failed.' }
+
+      - name: PSScriptAnalyzer
+        run: |
+          & $env:POWERSHELL_EXE -NoLogo -NoProfile -File ./test/Invoke-DeployCubeTests.ps1 -Type Analyzer -CI
+          if ($LASTEXITCODE -ne 0) { throw 'PSScriptAnalyzer validation failed.' }
+
+      - name: Unit tests and coverage
+        run: |
+          & $env:POWERSHELL_EXE -NoLogo -NoProfile -File ./test/Invoke-DeployCubeTests.ps1 -Type Unit -CodeCoverage -CI
+          if ($LASTEXITCODE -ne 0) { throw 'Unit tests or coverage validation failed.' }
+
+      - name: Build and inspect local release package
+        run: |
+          & $env:POWERSHELL_EXE -NoLogo -NoProfile -File ./test/Build-ReleasePackage.ps1 -OutputPath ./TestResults/package-powershell-7
+          if ($LASTEXITCODE -ne 0) { throw 'Local package validation failed.' }
+
+      - name: Upload reports and local package
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: experimental-powershell-${{ matrix.version }}
+          path: |
+            TestResults/*.xml
+            TestResults/*.json
+            TestResults/*.txt
+            TestResults/package-powershell-7/
+          if-no-files-found: warn
+          retention-days: 14

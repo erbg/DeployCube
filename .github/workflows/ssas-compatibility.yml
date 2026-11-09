@@ -45,7 +45,7 @@ jobs:
       ARTIFACT_DIRECTORY: artifacts/ssas/${{ matrix.ssas_version }}/${{ matrix.mode }}/ssms-${{ matrix.ssms_major }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Capture runner diagnostics
         shell: powershell
@@ -396,7 +396,7 @@ jobs:
 
       - name: Upload SQL setup logs, reports and test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ssas-${{ matrix.ssas_version }}-${{ matrix.mode }}-ssms-${{ matrix.ssms_major }}
           path: ${{ env.ARTIFACT_DIRECTORY }}

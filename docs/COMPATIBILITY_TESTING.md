@@ -36,13 +36,26 @@ unit/syntax check, but is not a Windows PowerShell 7.4/7.5 result.
 | Runtime / host | Syntax and manifest | Analyzer | Unit tests / coverage | Local package |
 |---|---|---|---|---|
 | PowerShell 7.6.9 / Linux x64 | Passed; 101 PowerShell files parsed | Passed; 1,951 passed, 0 failed | Passed; 389 passed, 0 failed, 4 skipped; 377/428 commands (88.08%, threshold 75%) | Passed; `DeployCube.1.2.6.nupkg` built and inspected, not published |
-| PowerShell 7.4.22 / Windows Server 2022 | Pending hosted workflow run | Pending hosted workflow run | Pending hosted workflow run | Pending hosted workflow run |
-| PowerShell 7.5.13 / Windows Server 2022 | Pending hosted workflow run | Pending hosted workflow run | Pending hosted workflow run | Pending hosted workflow run |
+| [PowerShell 7.4.22 / Windows Server 2022](https://github.com/erbg/DeployCube/actions/runs/42703818689/job/129455231778) | Passed; 101 PowerShell files parsed | Passed; 1,951 passed, 0 failed | Passed; 392 passed, 0 failed, 1 skipped; 393/428 commands (91.82%, threshold 75%) | Passed; `DeployCube.1.2.6.nupkg` built and inspected, not published |
+| [PowerShell 7.5.13 / Windows Server 2022](https://github.com/erbg/DeployCube/actions/runs/42703818689/job/129455231287) | Passed; 101 PowerShell files parsed | Passed; 1,951 passed, 0 failed | Passed; 392 passed, 0 failed, 1 skipped; 393/428 commands (91.82%, threshold 75%) | Passed; `DeployCube.1.2.6.nupkg` built and inspected, not published |
 
 The four local skips include the Windows-only OLE DB cases; Linux coverage is
 not interchangeable with Windows coverage. The Linux unit result does not
 exercise SSAS, AMO server connectivity, deployment-utility execution, Windows
 authentication, or source-provider availability.
+
+The Windows 7.4/7.5 results establish that the isolated syntax, analyzer, unit,
+coverage, and local-package gates pass on these exact runtime patches. They do
+not include live SSAS deployment or processing, and do not change the module's
+support declaration. The existing [Windows PowerShell 5.1 CI job](https://github.com/erbg/DeployCube/actions/runs/42703818270/job/129455229939)
+also passed on the same pull request.
+
+No PowerShell 7.4/7.5 blocker appeared in the tested gates. End-to-end
+compatibility remains unproven: AMO/SqlServer loading and authentication,
+Deployment Utility execution, and real SSAS deployment/processing were not run
+in this matrix. The known Multidimensional `.configsettings` defect
+([assessment F01](MODERNIZATION_ASSESSMENT.md)) remains a product blocker and
+was not changed here.
 
 ## Linux orchestration and remote SSAS feasibility
 

@@ -1,5 +1,5 @@
 [![PowerShell Gallery Version](https://img.shields.io/powershellgallery/v/DeployCube.svg)](https://www.powershellgallery.com/packages/DeployCube)
-[![CI](https://github.com/DrJohnT/DeployCube/actions/workflows/ci.yml/badge.svg)](https://github.com/DrJohnT/DeployCube/actions/workflows/ci.yml)
+[![CI](https://github.com/erbg/DeployCube/actions/workflows/ci.yml/badge.svg)](https://github.com/erbg/DeployCube/actions/workflows/ci.yml)
 ### DeployCube
 
 # Deploy a SSAS Tabular or Multidimensional cube using the Analysis Services Deployment Utility
@@ -80,23 +80,23 @@ The following is a list of commands provided by this module once you have instal
 
 | **Function**             | **Description**                                                             |
 |--------------------------|-----------------------------------------------------------------------------|
-| [Find-AnalysisServicesDeploymentExeLocations](https://github.com/DrJohnT/DeployCube/blob/master/docs/Find-AnalysisServicesDeploymentExeLocations.md) | Lists all locations of Microsoft.AnalysisServices.Deployment.exe on the host |
-| [Get-AnalysisServicesDeploymentExePath](https://github.com/DrJohnT/DeployCube/blob/master/docs/Get-AnalysisServicesDeploymentExePath.md) | Returns the path of a specific version of Microsoft.AnalysisServices.Deployment.exe |
-| [Get-CubeDatabaseCompatibilityLevel](https://github.com/DrJohnT/DeployCube/blob/master/docs/Get-CubeDatabaseCompatibilityLevel.md) | Returns the CompatibilityLevel of a deployed cube database |
-| [Get-ServerMode](https://github.com/DrJohnT/DeployCube/blob/master/docs/Get-ServerMode.md) | Returns the mode of the server: Tabular or Multidimensional |
-| [Get-SqlAsPath](https://github.com/DrJohnT/DeployCube/blob/master/docs/Get-SqlAsPath.md) | Returns the path to a specific cube database SQLSERVER:\SQLAS\YourServer\DEFAULT\Databases\YourCubeDatabase |
-| [Get-ModuleByName](https://github.com/DrJohnT/DeployCube/blob/master/docs/Get-ModuleByName.md) | Loads the named PowerShell module, installing it if required || Publish-Cube                                | Publishes a Tabular or Multidimensional cube to the specified server |
-| [Get-SqlConnectionString](https://github.com/DrJohnT/DeployCube/blob/master/docs/Get-SqlConnectionString.md) | Helper function to create valid SQL Server database connection strings |
-| [Get-SsasProcessingMessages](https://github.com/DrJohnT/DeployCube/blob/master/docs/Get-SqlConnectionString.md) | Examines the XML returned by the Invoke-AsCmd function to find errors.  Writes error message if errors are found |
-| [Invoke-ProcessTabularCubeDatabase](https://github.com/DrJohnT/DeployCube/blob/master/docs/Invoke-ProcessTabularCubeDatabase.md) | Processes an SSAS database on a SQL Server SSAS instance |
-| [Invoke-ExternalCommand](https://github.com/DrJohnT/DeployCube/blob/master/docs/Invoke-ExternalCommand.md) | Helper function to run command-line programs |
-| [Ping-SsasDatabase](https://github.com/DrJohnT/DeployCube/blob/master/docs/Ping-SsasDatabase.md) | Returns true if the specified SSAS database exists on the server |
-| [Ping-SsasServer](https://github.com/DrJohnT/DeployCube/blob/master/docs/Ping-SsasServer.md) | Returns true if the specified SSAS server exists |
-| [Publish-Cube](https://github.com/DrJohnT/DeployCube/blob/master/docs/Publish-Cube.md) | Publish-Cube deploys a tabular or multidimentional cube to a SQL Server Analysis Services instance |
-| [Select-AnalysisServicesDeploymentExeVersion](https://github.com/DrJohnT/DeployCube/blob/master/docs/Select-AnalysisServicesDeploymentExeVersion.md) | Finds a specific version of the Microsoft.AnalysisServices.Deployment.exe if more than one present on the host |
-| [Unpublish-Cube](https://github.com/DrJohnT/DeployCube/blob/master/docs/Unpublish-Cube.md) | Drops a Tabular or Multidimensional cube from the specified server |
-| [Update-AnalysisServicesConfig](https://github.com/DrJohnT/DeployCube/blob/master/docs/Update-AnalysisServicesConfig.md) | Updates the various config files (listed below) which are needed to deploy the cube |
-| [Update-TabularCubeDataSource](https://github.com/DrJohnT/DeployCube/blob/master/docs/Update-TabularCubeDataSource.md) | Updates the cube's connection to the source SQL database. |
+| [Find-AnalysisServicesDeploymentExeLocations](https://github.com/erbg/DeployCube/blob/master/docs/Find-AnalysisServicesDeploymentExeLocations.md) | Lists all locations of Microsoft.AnalysisServices.Deployment.exe on the host |
+| [Get-AnalysisServicesDeploymentExePath](https://github.com/erbg/DeployCube/blob/master/docs/Get-AnalysisServicesDeploymentExePath.md) | Returns the path of a specific version of Microsoft.AnalysisServices.Deployment.exe |
+| [Get-CubeDatabaseCompatibilityLevel](https://github.com/erbg/DeployCube/blob/master/docs/Get-CubeDatabaseCompatibilityLevel.md) | Returns the CompatibilityLevel of a deployed cube database |
+| [Get-ServerMode](https://github.com/erbg/DeployCube/blob/master/docs/Get-ServerMode.md) | Returns the mode of the server: Tabular or Multidimensional |
+| [Get-SqlAsPath](https://github.com/erbg/DeployCube/blob/master/docs/Get-SqlAsPath.md) | Returns the path to a specific cube database SQLSERVER:\SQLAS\YourServer\DEFAULT\Databases\YourCubeDatabase |
+| [Get-ModuleByName](https://github.com/erbg/DeployCube/blob/master/docs/Get-ModuleByName.md) | Loads the named PowerShell module, installing it if required || Publish-Cube                                | Publishes a Tabular or Multidimensional cube to the specified server |
+| [Get-SqlConnectionString](https://github.com/erbg/DeployCube/blob/master/docs/Get-SqlConnectionString.md) | Helper function to create valid SQL Server database connection strings |
+| [Get-SsasProcessingMessages](https://github.com/erbg/DeployCube/blob/master/docs/Get-SqlConnectionString.md) | Examines the XML returned by the Invoke-AsCmd function to find errors.  Writes error message if errors are found |
+| [Invoke-ProcessTabularCubeDatabase](https://github.com/erbg/DeployCube/blob/master/docs/Invoke-ProcessTabularCubeDatabase.md) | Processes an SSAS database on a SQL Server SSAS instance |
+| [Invoke-ExternalCommand](https://github.com/erbg/DeployCube/blob/master/docs/Invoke-ExternalCommand.md) | Helper function to run command-line programs |
+| [Ping-SsasDatabase](https://github.com/erbg/DeployCube/blob/master/docs/Ping-SsasDatabase.md) | Returns true if the specified SSAS database exists on the server |
+| [Ping-SsasServer](https://github.com/erbg/DeployCube/blob/master/docs/Ping-SsasServer.md) | Returns true if the specified SSAS server exists |
+| [Publish-Cube](https://github.com/erbg/DeployCube/blob/master/docs/Publish-Cube.md) | Publish-Cube deploys a tabular or multidimentional cube to a SQL Server Analysis Services instance |
+| [Select-AnalysisServicesDeploymentExeVersion](https://github.com/erbg/DeployCube/blob/master/docs/Select-AnalysisServicesDeploymentExeVersion.md) | Finds a specific version of the Microsoft.AnalysisServices.Deployment.exe if more than one present on the host |
+| [Unpublish-Cube](https://github.com/erbg/DeployCube/blob/master/docs/Unpublish-Cube.md) | Drops a Tabular or Multidimensional cube from the specified server |
+| [Update-AnalysisServicesConfig](https://github.com/erbg/DeployCube/blob/master/docs/Update-AnalysisServicesConfig.md) | Updates the various config files (listed below) which are needed to deploy the cube |
+| [Update-TabularCubeDataSource](https://github.com/erbg/DeployCube/blob/master/docs/Update-TabularCubeDataSource.md) | Updates the cube's connection to the source SQL database. |
 
 ## Azure DevOps Agent
 
@@ -121,4 +121,10 @@ see [compatibility testing](docs/COMPATIBILITY_TESTING.md).
 
 If you are facing problems in making this PowerShell module work, please report any
 problems on [DeployCube GitHub Project
-Page](https://github.com/DrJohnT/DeployCube/issues).
+Page](https://github.com/erbg/DeployCube/issues).
+
+## Acknowledgements
+
+DeployCube was originally created by [DrJohnT](https://github.com/DrJohnT).
+Special thanks to John for developing the project and making it available to the open-source community.
+The project continues to be maintained and developed, and contributions, bug reports, and pull requests are welcome.

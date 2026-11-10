@@ -8,7 +8,8 @@ Describe 'SSMS installer diagnostic collection' {
         $script:root = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         $script:destination = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         New-Item -ItemType Directory -Path (Join-Path $script:root 'nested') -Force | Out-Null
-        foreach ($name in @('dd_setup_123.log', 'dd_bootstrapper_123.log', 'dd_precheck_123.log', 'unrelated.txt')) {
+        foreach ($name in @('dd_setup_123.log', 'dd_bootstrapper_123.log', 'dd_precheck_123.log',
+                'ssms_bootstrapper_123.log', 'ssms_client_123.log', 'ssms_setup_123.log', 'unrelated.txt')) {
             Set-Content -LiteralPath (Join-Path $script:root $name) -Value $name
         }
         Set-Content -LiteralPath (Join-Path $script:root 'nested/dd_setup_nested.log') -Value 'nested'
@@ -20,10 +21,13 @@ Describe 'SSMS installer diagnostic collection' {
         $result = @(Copy-SsmsSetupLogs -Roots @($script:root) -Destination $script:destination `
             -SinceUtc ([datetime]::UtcNow.AddHours(-1)))
         $names = @($result[0].Files | ForEach-Object { Split-Path -Leaf $_.Source })
-        $names.Count | Should -Be 3
+        $names.Count | Should -Be 6
         $names | Should -Contain 'dd_setup_123.log'
         $names | Should -Contain 'dd_bootstrapper_123.log'
         $names | Should -Contain 'dd_precheck_123.log'
+        $names | Should -Contain 'ssms_bootstrapper_123.log'
+        $names | Should -Contain 'ssms_client_123.log'
+        $names | Should -Contain 'ssms_setup_123.log'
         Test-Path -LiteralPath $result[0].Files[0].Artifact | Should -BeTrue
     }
 

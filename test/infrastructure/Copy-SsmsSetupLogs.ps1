@@ -19,7 +19,7 @@ function Copy-SsmsSetupLogs {
         foreach ($file in @(Get-ChildItem -LiteralPath $rootPath -File -Recurse:$Recurse -ErrorAction Stop |
             Where-Object {
                 $_.LastWriteTimeUtc -ge $SinceUtc -and
-                $_.Name -match '(?i)^(dd_.*|vs_.*|.*precheck.*|.*bootstrapper.*|.*setup.*)\.(log|txt|json)$'
+                $_.Name -match '(?i)^(dd_.*|vs_.*|ssms_.*|.*precheck.*|.*bootstrapper.*|.*setup.*)\.(log|txt|json)$'
             })) {
             if ($seen.ContainsKey($file.FullName)) { continue }
             $seen[$file.FullName] = $true

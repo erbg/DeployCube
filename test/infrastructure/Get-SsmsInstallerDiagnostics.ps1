@@ -22,12 +22,28 @@ $inventory = [ordered]@{
     Tmp = $env:TMP
     RunnerTemp = $env:RUNNER_TEMP
     InstallerTempDirectory = $InstallerTempDirectory
+    OperatingSystem = [Environment]::OSVersion.VersionString
+    Is64BitOperatingSystem = [Environment]::Is64BitOperatingSystem
+    Identity = $null
+    IsAdministrator = $null
+    SystemDriveFreeBytes = $null
+    RunnerTempAccess = $null
     VswherePath = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
     VswhereExitCode = $null
     VisualStudioInstances = $null
     InstallerProcesses = @()
     Errors = $errors
 }
+try {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $inventory.Identity = $identity.Name
+    $inventory.IsAdministrator = ([Security.Principal.WindowsPrincipal]::new($identity)).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
+    $inventory.SystemDriveFreeBytes = ([System.IO.DriveInfo]::new($env:SystemDrive + '\')).AvailableFreeSpace
+    $inventory.RunnerTempAccess = @(Get-Acl -LiteralPath $env:RUNNER_TEMP -ErrorAction Stop |
+        Select-Object -ExpandProperty Access | Select-Object IdentityReference, FileSystemRights, AccessControlType, IsInherited)
+}
+catch { $errors.Add("Installer prerequisites: $($_.Exception.Message)") }
 try {
     if (Test-Path -LiteralPath $inventory.VswherePath -PathType Leaf) {
         $instances = & $inventory.VswherePath -all -prerelease -products '*' -format json -utf8

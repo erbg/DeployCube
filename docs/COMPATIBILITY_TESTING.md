@@ -529,8 +529,10 @@ differ, and the available logs do not establish an exception cause or a
 conflict with preinstalled Visual Studio components.
 
 For future Phase I runs, the workflow captures `vswhere` instance inventory and
-installer-process information before and after setup. It also collects recent
-setup, bootstrapper and precheck logs from the installer temp directory, user,
+installer-process information before and after setup, alongside OS, elevation,
+system-drive free space and runner temp permissions. It also collects recent
+`ssms_bootstrapper`, `ssms_client`, `ssms_setup`, `dd_*`, and other setup,
+bootstrapper and precheck logs from the installer temp directory, user,
 runner and Windows temp directories, and Visual Studio setup/installer log
 locations. Application, System and available Visual Studio event logs are
 captured after the attempt, including on failure. The artifact includes a

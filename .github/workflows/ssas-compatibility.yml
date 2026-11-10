@@ -68,6 +68,7 @@ permissions:
 jobs:
   ssas-compatibility:
     name: SQL Server ${{ matrix.ssas_version }} ${{ matrix.mode }} + SSMS ${{ matrix.ssms_major }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (github.workflow == 'SSAS compatibility' || (github.workflow == 'Experimental PowerShell 7 SSAS integration' && inputs.scope == 'phase-i-powershell7' && (inputs.powershell7_version == '7.4.22' || inputs.powershell7_version == '7.5.13') && (inputs.powershell7_mode == 'Tabular' || inputs.powershell7_mode == 'Multidimensional'))) }}
     runs-on: windows-2022
     timeout-minutes: 240
     strategy:

@@ -91,17 +91,39 @@ Tabular compatibility level **1500**, or Multidimensional compatibility level
 [SSAS compatibility workflow](../.github/workflows/ssas-compatibility.yml)
 reuses the existing media download/verification, SSMS and SSAS installers,
 service verification, isolated SQL source provisioning, and cleanup.
+The reusable job also rejects automatic events, and allows the separate entry
+workflow only for the Phase I scope and the two listed versions and modes.
 
 Runner provisioning and its cleanup use Windows PowerShell 5.1 where required.
 The integration runner itself is launched by the selected `pwsh.exe`, verifies
 its exact version and Core edition, then invokes the existing DeployCube
-processing test script in that same process. It records SqlServer module and
+processing test script in that same process. It imports DeployCube with
+`-SkipEditionCheck` and verifies that `Publish-Cube` and `Unpublish-Cube` are
+the local module's actual function definitions, not compatibility proxies.
+The separate Deployment Utility executable is still used for deployment and
+full processing. The test records SqlServer module and
 `Invoke-ASCmd` metadata, loaded AMO assemblies, .NET runtime, SSAS and utility
 versions, Windows authentication identity, deployment, full processing,
 numeric DAX/MDX verification, and cleanup. It reports separately whether the
 SqlServer module appears loaded in-process or through a Windows PowerShell
 compatibility mechanism. A compatibility-module result is not described as
 native PowerShell 7 support.
+
+Fallback cleanup runs in Windows PowerShell 5.1 after a failed or cancelled
+integration step. Both modes delete only databases recorded as owned by that
+test run and verify that the fixture names are absent; fallback cleanup cannot
+turn a failed PowerShell 7 integration into a pass. SQL source cleanup is
+performed separately.
+
+To run the first Tabular cell after the entry workflow is registered on the
+default branch, select **Actions > Experimental PowerShell 7 SSAS integration
+> Run workflow**, choose the feature branch, PowerShell `7.4.22`, and mode
+`Tabular`. While the entry workflow exists only on the PR branch, use the
+already-registered **SSAS compatibility** workflow instead, select that
+branch, scope `phase-i-powershell7`, PowerShell `7.4.22`, and mode `Tabular`.
+Each run installs SSMS, SSAS, and a SQL source on an isolated hosted runner and
+can take hours. Review its run summary and uploaded artifact, especially
+deployment, processing, DAX value 10, and both cleanup outcomes.
 
 Each result must show successful database deployment, full processing, query
 value **10**, and verified `Unpublish-Cube` cleanup; source provisioning and

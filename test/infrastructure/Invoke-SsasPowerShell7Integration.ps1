@@ -116,7 +116,9 @@ try {
 
     $failureStage = 'DeployCube module import'
     $repositoryRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
-    Import-Module (Join-Path $repositoryRoot 'DeployCube\DeployCube.psd1') -Force -ErrorAction Stop
+    . (Join-Path $PSScriptRoot 'Assert-NativeDeployCube.ps1')
+    Import-Module (Join-Path $repositoryRoot 'DeployCube\DeployCube.psd1') -Force -SkipEditionCheck -ErrorAction Stop
+    Assert-NativeDeployCube -RepositoryRoot $repositoryRoot
     $failureStage = 'SqlServer module installation'
     if (-not (Get-Module -ListAvailable -Name SqlServer)) {
         Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop
@@ -124,6 +126,7 @@ try {
     }
     $failureStage = 'SqlServer module import'
     Import-Module SqlServer -ErrorAction Stop
+    Assert-NativeDeployCube -RepositoryRoot $repositoryRoot
     $asCmd = Get-Command -Name Invoke-ASCmd -ErrorAction Stop
     $availableSqlServerModule = Get-Module -ListAvailable -Name SqlServer |
         Sort-Object Version -Descending | Select-Object -First 1
@@ -205,6 +208,7 @@ try {
         LogDirectory = $processingDirectory
         SourceReportPath = $SourceReportPath
         SsasVersion = $SsasVersion
+        NativeDeployCube = $true
     }
     if ($Mode -eq 'Tabular') { $scriptArguments.PhaseH2 = $true }
     & $processingScript @scriptArguments

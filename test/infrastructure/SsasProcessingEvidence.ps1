@@ -128,3 +128,15 @@ function Invoke-RecordedProcessFull {
         $record | ConvertTo-Json -Depth 7 | Set-Content -LiteralPath $Path -Encoding UTF8
     }
 }
+function Get-OwnedSsasDatabaseNames {
+    param(
+        [AllowNull()][AllowEmptyCollection()][string[]]$OwnedNames,
+        [Parameter(Mandatory = $true)][string[]]$AllowedNames
+    )
+    foreach ($name in @($OwnedNames)) {
+        if ([string]::IsNullOrWhiteSpace($name) -or $name -notin $AllowedNames) {
+            throw "Unexpected cleanup database '$name'."
+        }
+    }
+    return @($OwnedNames)
+}

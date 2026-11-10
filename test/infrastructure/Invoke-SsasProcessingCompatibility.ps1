@@ -3,15 +3,25 @@ param(
     [Parameter(Mandatory = $true)][string]$LogDirectory,
     [Parameter(Mandatory = $true)][string]$SourceReportPath,
     [Parameter(Mandatory = $true)][ValidateSet('2019', '2022', '2025')][string]$SsasVersion,
-    [switch]$CleanupOnly
+    [switch]$CleanupOnly,
+    [switch]$NativeDeployCube
 )
 
 $ErrorActionPreference = 'Stop'
 New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null
 $LogDirectory = (Resolve-Path $LogDirectory).Path
 $reportPath = Join-Path $LogDirectory 'processing-report.json'
-Import-Module (Join-Path $PSScriptRoot '../../DeployCube/DeployCube.psd1') -Force -ErrorAction Stop
+if ($NativeDeployCube) {
+    . (Join-Path $PSScriptRoot 'Assert-NativeDeployCube.ps1')
+    Assert-NativeDeployCube -RepositoryRoot (Resolve-Path (Join-Path $PSScriptRoot '../..'))
+}
+else {
+    Import-Module (Join-Path $PSScriptRoot '../../DeployCube/DeployCube.psd1') -Force -ErrorAction Stop
+}
 Import-Module SqlServer -ErrorAction Stop
+if ($NativeDeployCube) {
+    Assert-NativeDeployCube -RepositoryRoot (Resolve-Path (Join-Path $PSScriptRoot '../..'))
+}
 . (Join-Path $PSScriptRoot 'SsasProcessingEvidence.ps1')
 . (Join-Path $PSScriptRoot 'Assert-MultidimensionalMetadata.ps1')
 $names = @('DeployCubeProcessingGood', 'DeployCubeProcessingInvalidSource', 'DeployCubeProcessingMissingTable')
@@ -42,6 +52,7 @@ function Publish-ProcessingFixture {
     $server.Refresh($true)
     $database = $server.Databases.FindByName($Name)
     if (-not $database) { throw "Publish-Cube returned without creating '$Name'." }
+    $report.DatabaseExistsAfterPublish = $true
     $metadata = Assert-MultidimensionalMetadata -Database $database
     $metadata | ConvertTo-Json | Set-Content -LiteralPath (Join-Path (Split-Path -Parent $path) 'deployed-metadata.json') -Encoding UTF8
     return $path
@@ -189,20 +200,22 @@ finally {
     $cleanupErrors = @()
     try {
         if ($server.Connected) {
-            foreach ($name in @($report.OwnedDatabases)) {
-                try {
-                    if ($name -notin $names) { throw "Unexpected cleanup database '$name'." }
-                    $server.Refresh($true)
-                    if ($server.Databases.FindByName($name)) {
-                        Unpublish-Cube -Server 'localhost\DCUBE' -CubeDatabase $name -ErrorAction Stop | Out-Host
+            try {
+                foreach ($name in @(Get-OwnedSsasDatabaseNames -OwnedNames $report.OwnedDatabases -AllowedNames $names)) {
+                    try {
+                        $server.Refresh($true)
+                        if ($server.Databases.FindByName($name)) {
+                            Unpublish-Cube -Server 'localhost\DCUBE' -CubeDatabase $name -ErrorAction Stop | Out-Host
+                        }
+                        $server.Refresh($true)
+                        if ($server.Databases.FindByName($name)) { throw "SSAS database '$name' remains after Unpublish-Cube." }
                     }
-                    $server.Refresh($true)
-                    if ($server.Databases.FindByName($name)) { throw "SSAS database '$name' remains after Unpublish-Cube." }
+                    catch { $cleanupErrors += $_.Exception.ToString() }
                 }
-                catch { $cleanupErrors += $_.Exception.ToString() }
+                $report.RemainingTestDatabases = @($names | Where-Object { $server.Databases.FindByName($_) })
+                if ($report.RemainingTestDatabases.Count) { $cleanupErrors += 'One or more Phase G SSAS databases remain.' }
             }
-            $report.RemainingTestDatabases = @($names | Where-Object { $server.Databases.FindByName($_) })
-            if ($report.RemainingTestDatabases.Count) { $cleanupErrors += 'One or more Phase G SSAS databases remain.' }
+            catch { $cleanupErrors += $_.Exception.ToString() }
         }
         else { $cleanupErrors += 'Cannot connect to SSAS to verify cleanup.' }
     }

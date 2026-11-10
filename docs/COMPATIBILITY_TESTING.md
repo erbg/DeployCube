@@ -7,8 +7,9 @@ PSScriptAnalyzer, infrastructure-free Pester/coverage, manifest and local packag
 validation on Windows PowerShell 5.1 for pull requests and pushes to `master`.
 It does not install SSMS/SSAS or perform live deployments or processing.
 The [SSMS workflow](../.github/workflows/ssms-compatibility.yml) and
-[SSAS workflow](../.github/workflows/ssas-compatibility.yml) are
-`workflow_dispatch`-only. The compatibility evidence below comes from those
+[SSAS workflow](../.github/workflows/ssas-compatibility.yml) are manual-only;
+SSAS also accepts a narrowly guarded reusable call from the manual PowerShell 7
+entry workflow. The compatibility evidence below comes from those
 manually triggered integration runs, not from the automatic unit-test gate.
 
 ## Experimental PowerShell 7 compatibility
@@ -56,6 +57,117 @@ Deployment Utility execution, and real SSAS deployment/processing were not run
 in this matrix. The known Multidimensional `.configsettings` defect
 ([assessment F01](MODERNIZATION_ASSESSMENT.md)) remains a product blocker and
 was not changed here.
+
+### Experimental native PowerShell 7 SSAS integration
+
+#### Existing execution boundary and dependencies
+
+The existing SSAS workflow's provisioning steps use the Windows PowerShell
+runner shell. Its Phase G and H processing steps explicitly launch
+`$PSHOME/powershell.exe`, so those prior processing passes are Windows
+PowerShell 5.1 results. The four infrastructure scripts
+[`Invoke-SsasCompatibility.ps1`](../test/infrastructure/Invoke-SsasCompatibility.ps1),
+[`Invoke-SsasProcessingCompatibility.ps1`](../test/infrastructure/Invoke-SsasProcessingCompatibility.ps1),
+[`Invoke-SsasTabularProcessing.ps1`](../test/infrastructure/Invoke-SsasTabularProcessing.ps1),
+and [`Initialize-ProcessingSource.ps1`](../test/infrastructure/Initialize-ProcessingSource.ps1)
+do not themselves hard-code `powershell.exe`; that makes them callable from
+PowerShell 7, but does not prove that their dependencies work there.
+
+The live path has separate Windows-specific dependencies: the SSMS-installed
+`Microsoft.AnalysisServices.Deployment.exe`; the SqlServer module and
+`Invoke-ASCmd`; AMO/TOM assemblies; Windows integrated authentication; the
+registered `MSOLEDBSQL` OLE DB provider; and SSAS/XMLA full processing with
+DAX or MDX query verification. The existing Phase C-F deployment checks verify
+real database deployment and removal but do not process models. Before this
+experiment, the main unverified compatibility boundary was loading and using
+SqlServer/AMO from PowerShell 7 while DeployCube's functions ran in that same
+runtime.
+
+The manually triggered
+[PowerShell 7 SSAS integration workflow](../.github/workflows/powershell7-ssas-integration.yml)
+selects one PowerShell patch and one SSAS mode per run. It tests PowerShell
+**7.4.22** or **7.5.13** with SSAS 2022 Developer, SSMS 22's Deployment Utility,
+Tabular compatibility level **1500**, or Multidimensional compatibility level
+**1100**. It has no pull-request or push trigger. The called
+[SSAS compatibility workflow](../.github/workflows/ssas-compatibility.yml)
+reuses the existing media download/verification, SSMS and SSAS installers,
+service verification, isolated SQL source provisioning, and cleanup.
+The reusable job also rejects automatic events, and allows the separate entry
+workflow only for the Phase I scope and the two listed versions and modes.
+
+Runner provisioning and its cleanup use Windows PowerShell 5.1 where required.
+The integration runner itself is launched by the selected `pwsh.exe`, verifies
+its exact version and Core edition, then invokes the existing DeployCube
+processing test script in that same process. It imports DeployCube with
+`-SkipEditionCheck` and verifies that `Publish-Cube` and `Unpublish-Cube` are
+the local module's actual function definitions, not compatibility proxies.
+The separate Deployment Utility executable is still used for deployment and
+full processing. The test records SqlServer module and
+`Invoke-ASCmd` metadata, loaded AMO assemblies, .NET runtime, SSAS and utility
+versions, Windows authentication identity, deployment, full processing,
+numeric DAX/MDX verification, and cleanup. It reports separately whether the
+SqlServer module appears loaded in-process or through a Windows PowerShell
+compatibility mechanism. A compatibility-module result is not described as
+native PowerShell 7 support.
+
+Fallback cleanup runs in Windows PowerShell 5.1 after a failed or cancelled
+integration step. Both modes delete only databases recorded as owned by that
+test run and verify that the fixture names are absent; fallback cleanup cannot
+turn a failed PowerShell 7 integration into a pass. SQL source cleanup is
+performed separately.
+
+To repeat the Tabular cell after the entry workflow is registered on the
+default branch, select **Actions > Experimental PowerShell 7 SSAS integration
+> Run workflow**, choose the feature branch, PowerShell `7.4.22`, and mode
+`Tabular`. While the entry workflow exists only on the PR branch, use the
+already-registered **SSAS compatibility** workflow instead, select that
+branch, scope `phase-i-powershell7`, PowerShell `7.4.22`, and mode `Tabular`.
+Each run installs SSMS, SSAS, and a SQL source on an isolated hosted runner and
+can take hours. Review its run summary and uploaded artifact, especially
+deployment, processing, DAX value 10, and both cleanup outcomes.
+
+Each result must show successful database deployment, full processing, query
+value **10**, and verified `Unpublish-Cube` cleanup; source provisioning and
+cleanup must also pass before the overall run is marked validated. Failures are
+classified as PowerShell 7 compatibility, missing dependency, authentication,
+Deployment Utility, SSAS processing, or infrastructure/installation problems.
+In particular, media-download and SSMS/SSAS installation failures are not
+counted as PowerShell compatibility failures. Diagnostic artifacts are uploaded
+even when a workflow step fails.
+
+| PowerShell / SSAS mode | Model level | Real deployment | Full processing | DAX/MDX result | Cleanup | Evidence |
+|---|---:|---|---|---|---|---|
+| 7.4.22 / Tabular | 1500 | Passed | Passed | DAX 10 | Passed | [run 42793769996](https://github.com/erbg/DeployCube/actions/runs/42793769996), native PowerShell 7 |
+| 7.4.22 / Multidimensional | 1100 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
+| 7.5.13 / Tabular | 1500 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
+| 7.5.13 / Multidimensional | 1100 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
+
+#### Compatibility assessment and next steps
+
+The existing baseline remains Windows PowerShell 5.1; its live 2022 Tabular and
+Multidimensional processing evidence is recorded in
+[run 40895275965](https://github.com/erbg/DeployCube/actions/runs/40895275965)
+and [run 40856087729](https://github.com/erbg/DeployCube/actions/runs/40856087729).
+The Windows PowerShell 7 syntax, analyzer, unit, coverage, and package checks
+listed above are not SSAS deployment evidence.
+
+**Native Windows PowerShell 7 deployment and processing passed for the exact
+7.4.22 / SSAS 2022 Tabular tuple above.** The run used PowerShell Core 7.4.22
+and .NET 8.0.33, SqlServer 22.4.5.1 and AMO/TOM 19.96.1.0 loaded in-process,
+SSAS 16.0.42.209, and the SSMS 22 Deployment Utility 22.1.17.0. It verified
+Windows integrated authentication, real database creation, full processing,
+the DAX value 10, `Unpublish-Cube` cleanup, and SQL source cleanup. Deployment
+and processing use the separate Windows Deployment Utility executable, while
+DeployCube functions run in PowerShell 7, not a Windows PowerShell compatibility
+session. This is experimental evidence for that fixture and tuple, not a general
+support declaration. No SqlServer or AMO changes were needed for this run;
+the remaining tuples and other dependencies are untested.
+
+If a future cell uses a compatibility session, document it separately as
+PowerShell 7 using compatibility mechanisms. Preserve the Windows PowerShell 5.1
+gate. Linux remote orchestration remains a separate future project: it may be
+feasible as a control plane dispatching to an isolated Windows worker, but this
+workflow does not validate Linux connectivity or direct Linux deployment.
 
 ## Linux orchestration and remote SSAS feasibility
 
@@ -396,6 +508,52 @@ Utility paths recorded by the real inventory:
 Each cell passed **31 infrastructure guard tests** and **3 real integration tests** (9/9 real integration tests in total). The direct probe checked database existence and compatibility 1500 and removed its separate database. The DeployCube tests independently deployed the checked-in fixture, verified database existence and compatibility 1500, and verified database absence after real `Unpublish-Cube`. Media was dismounted/deleted, and diagnostics were uploaded in all cells. This does not certify external data sources, processing, other compatibility levels, or other SSAS versions/modes.
 
 #### Installer investigation, separate from utility compatibility
+
+[Run 42784595667](https://github.com/erbg/DeployCube/actions/runs/42784595667)
+was blocked during SSMS 22 installation, before SSAS setup or any PowerShell 7
+DeployCube operation. The signed bootstrapper `18.11.12328.437` extracted
+successfully, then `vs_setup_bootstrapper.exe` exited with `0x8013153B`.
+Redirected stdout contains extraction output and stderr is empty. The captured
+Application events show the Visual Studio Setup Test MSI completed successfully;
+they do not identify the later bootstrapper exception. The run had approximately
+81 GiB free on the system drive.
+
+The Phase I installer passed a relative artifact directory as `TEMP` and `TMP`;
+the extraction log shows it resolved under the long checkout path. In contrast,
+the previously successful [2022 Tabular processing run 40895275965](https://github.com/erbg/DeployCube/actions/runs/40895275965)
+used the short absolute `RUNNER_TEMP/ssms-22-logs` path and bootstrapper
+`18.11.12324.101`. Phase I now uses the same short-path configuration already
+used by phases D through H2. This is a targeted mitigation supported by the
+prior successful configuration, **not proof** that path length or relative
+`TEMP` caused the failure: the bootstrapper version and runner image also
+differ, and the available logs do not establish an exception cause or a
+conflict with preinstalled Visual Studio components.
+
+[Run 42790406735](https://github.com/erbg/DeployCube/actions/runs/42790406735)
+installed the same SSMS bootstrapper version successfully using the short
+temporary path, then installed SSAS and provisioned the SQL source. The runner
+was elevated and had 78 GiB free before SSMS installation. This supports the
+mitigation but still does not establish why the earlier bootstrapper failed.
+The PowerShell 7 test step then failed because its bounded-process helper
+called an undefined logging function after starting the child. Cleanup ran,
+but could race that child; the run provides no reliable deployment, processing
+or query result. The workflow now supplies the logger, and the helper refuses
+to start a process if the logger is missing.
+
+For future Phase I runs, the workflow captures `vswhere` instance inventory and
+installer-process information before and after setup, alongside OS, elevation,
+system-drive free space and runner temp permissions. It also collects recent
+`ssms_bootstrapper`, `ssms_client`, `ssms_setup`, `dd_*`, and other setup,
+bootstrapper and precheck logs from the installer temp directory, user,
+runner and Windows temp directories, and Visual Studio setup/installer log
+locations. Application, System and available Visual Studio event logs are
+captured after the attempt, including on failure. The artifact includes a
+source-path inventory and reports collection errors rather than silently
+claiming complete diagnostics. These logs can contain runner paths and system
+details and should be handled as diagnostic artifacts. The later
+[run 42793769996](https://github.com/erbg/DeployCube/actions/runs/42793769996)
+also installed SSMS successfully and completed the full native PowerShell 7
+Tabular integration; other configurations remain unverified.
 
 [Run 40689319575](https://github.com/erbg/DeployCube/actions/runs/40689319575) passed the SSMS 20 baseline but failed to install SSMS 21 and 22 with `-2146233029` (`0x8013153B`) after **38.20 s** and **63.15 s**, respectively. Their decompression logs showed successful extraction followed by failure in the extracted Visual Studio bootstrapper, before SSAS installation or utility execution. Both runners had 81 GB free. These are installer failures, not utility/server incompatibility.
 

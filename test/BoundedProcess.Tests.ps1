@@ -42,6 +42,21 @@ Describe 'Bounded provisioning subprocess' {
             Should -BeGreaterThan 0
     }
 
+    It 'does not start a child if the required logger is unavailable' {
+        Mock Get-Command { $null } -ParameterFilter { $Name -eq 'Write-ProvisioningLog' }
+        $markerPath = Join-Path $script:processDirectory 'child-started.txt'
+        "Set-Content -LiteralPath '$markerPath' -Value 'started'" |
+            Set-Content -LiteralPath $script:childPath -Encoding UTF8
+
+        {
+            Invoke-BoundedProcess -FilePath $script:powershellPath `
+                -ArgumentList @('-NoLogo', '-NoProfile', '-File', "`"$script:childPath`"") `
+                -TimeoutSeconds 10 -Stage 'Test subprocess' `
+                -StandardOutputPath $script:stdoutPath -StandardErrorPath $script:stderrPath
+        } | Should -Throw '*Write-ProvisioningLog must be available before starting*'
+        Test-Path -LiteralPath $markerPath | Should -BeFalse
+    }
+
     It 'terminates a process when its execution deadline expires' {
         'Start-Sleep -Seconds 30' | Set-Content -LiteralPath $script:childPath -Encoding UTF8
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()

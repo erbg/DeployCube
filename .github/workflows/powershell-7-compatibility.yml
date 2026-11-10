@@ -26,9 +26,7 @@ jobs:
       matrix:
         include:
           - version: '7.4.22'
-            sha256: '5f89f51860a1a3b07937945663afd7cbd44387361ff9985f5758939cb9bd6359'
           - version: '7.5.13'
-            sha256: '120b8f0b04f3b3f6e8c351ddbe568bf596cdca15eeb2ecb7e724060051a36d65'
     defaults:
       run:
         shell: powershell
@@ -40,24 +38,7 @@ jobs:
 
       - name: Download and verify PowerShell ${{ matrix.version }}
         run: |
-          $version = '${{ matrix.version }}'
-          $archiveName = "PowerShell-$version-win-x64.zip"
-          $archivePath = Join-Path $env:RUNNER_TEMP $archiveName
-          $downloadUri = "https://github.com/PowerShell/PowerShell/releases/download/v$version/$archiveName"
-          Invoke-WebRequest -Uri $downloadUri -OutFile $archivePath -ErrorAction Stop
-          $actualHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actualHash -ne '${{ matrix.sha256 }}') {
-            throw "PowerShell $version archive SHA-256 mismatch: $actualHash"
-          }
-          $installPath = Join-Path $env:RUNNER_TEMP "pwsh-$version"
-          Expand-Archive -LiteralPath $archivePath -DestinationPath $installPath -Force
-          $executable = Join-Path $installPath 'pwsh.exe'
-          $actualVersion = & $executable -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
-          if ($LASTEXITCODE -ne 0 -or $actualVersion -ne $version) {
-            throw "Expected PowerShell $version; found '$actualVersion'."
-          }
-          "POWERSHELL_EXE=$executable" | Add-Content -LiteralPath $env:GITHUB_ENV
-          Write-Host "Verified PowerShell $actualVersion ($actualHash)"
+          ./test/infrastructure/Install-VerifiedPowerShell.ps1 -Version '${{ matrix.version }}'
 
       - name: Install pinned test dependencies
         run: |

@@ -1,0 +1,38 @@
+name: Experimental PowerShell 7 SSAS integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      powershell_version:
+        description: PowerShell version to test
+        type: choice
+        required: true
+        default: '7.4.22'
+        options:
+          - '7.4.22'
+          - '7.5.13'
+      ssas_mode:
+        description: SSAS model mode to test
+        type: choice
+        required: true
+        default: Tabular
+        options:
+          - Tabular
+          - Multidimensional
+
+permissions:
+  contents: read
+
+concurrency:
+  group: powershell7-ssas-integration-${{ github.ref }}-${{ inputs.powershell_version }}-${{ inputs.ssas_mode }}
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    name: PowerShell ${{ inputs.powershell_version }} + SSAS 2022 ${{ inputs.ssas_mode }}
+    uses: ./.github/workflows/ssas-compatibility.yml
+    with:
+      scope: phase-i-powershell7
+      media_urls_json: '{"2022":"https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU-Dev.iso"}'
+      powershell7_version: ${{ inputs.powershell_version }}
+      powershell7_mode: ${{ inputs.ssas_mode }}

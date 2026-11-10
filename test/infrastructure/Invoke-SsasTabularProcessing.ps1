@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory = $true)][string]$SourceReportPath,
     [ValidateSet('2019', '2022', '2025')][string]$SsasVersion = '2022',
     [switch]$PhaseH2,
-    [switch]$CleanupOnly
+    [switch]$CleanupOnly,
+    [switch]$NativeDeployCube
 )
 
 $ErrorActionPreference = 'Stop'
@@ -33,6 +34,7 @@ $report = @{
     Fixture = 'Not tested'
     ModelCompatibilityLevel = $null
     PublishCube = 'Not tested'
+    DatabaseExistsAfterPublish = $false
     ProcessingCommand = 'Publish-Cube -ProcessingOption Full'
     Processing = 'Not tested'
     ProcessingDurationSeconds = $null
@@ -108,7 +110,7 @@ function Invoke-TabularDeployment {
 function Remove-OwnedTabularDatabases {
     param([Parameter(Mandatory = $true)]$Server)
     $errors = @()
-    foreach ($name in $databaseNames) {
+    foreach ($name in @(Get-OwnedSsasDatabaseNames -OwnedNames $report.OwnedDatabases -AllowedNames $databaseNames)) {
         try {
             $Server.Refresh($true)
             $database = $Server.Databases.FindByName($name)
@@ -125,8 +127,17 @@ function Remove-OwnedTabularDatabases {
     return $errors
 }
 
-Import-Module (Join-Path $PSScriptRoot '../../DeployCube/DeployCube.psd1') -Force -ErrorAction Stop
+if ($NativeDeployCube) {
+    . (Join-Path $PSScriptRoot 'Assert-NativeDeployCube.ps1')
+    Assert-NativeDeployCube -RepositoryRoot (Resolve-Path (Join-Path $PSScriptRoot '../..'))
+}
+else {
+    Import-Module (Join-Path $PSScriptRoot '../../DeployCube/DeployCube.psd1') -Force -ErrorAction Stop
+}
 Import-Module SqlServer -ErrorAction Stop
+if ($NativeDeployCube) {
+    Assert-NativeDeployCube -RepositoryRoot (Resolve-Path (Join-Path $PSScriptRoot '../..'))
+}
 . (Join-Path $PSScriptRoot 'TabularProcessingEvidence.ps1')
 . (Join-Path $PSScriptRoot 'SsasProcessingEvidence.ps1')
 $compatibilityLevel = Get-TabularProcessingCompatibilityLevel -SsasVersion $SsasVersion
@@ -259,6 +270,7 @@ REVERT;
     $tomServer = New-Object Microsoft.AnalysisServices.Tabular.Server
     $tomServer.Connect('localhost\DCUBE')
     $tabularDatabase = $tomServer.Databases.FindByName($databaseNames[0])
+    $report.DatabaseExistsAfterPublish = [bool]$tabularDatabase
     $table = if ($tabularDatabase) { $tabularDatabase.Model.Tables.Find('Fact') }
     $partition = if ($table) { $table.Partitions.Find('Fact') }
     $measure = if ($table) { $table.Measures.Find('Total Amount') }

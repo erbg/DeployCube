@@ -353,6 +353,11 @@ Describe 'PowerShell 7 SSAS integration safety' {
         }
     }
 
+    It 'defines the bounded-process logger before starting the PowerShell 7 harness' {
+        $workflow = Get-Content (Join-Path $script:repositoryRoot '.github/workflows/ssas-compatibility.yml') -Raw
+        $workflow | Should -Match '(?s)id: powershell7-tests.*?function Write-ProvisioningLog\s*\{.*?Invoke-BoundedProcess -FilePath \$env:POWERSHELL_EXE'
+    }
+
     It 'only selects recorded, allowed databases for either cleanup mode' {
         $allowed = @('Good', 'InvalidSource', 'MissingTable')
         @(Get-OwnedSsasDatabaseNames -OwnedNames @('Good') -AllowedNames $allowed) | Should -Be @('Good')

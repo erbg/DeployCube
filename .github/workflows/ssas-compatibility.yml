@@ -330,6 +330,10 @@ jobs:
         timeout-minutes: 25
         shell: powershell
         run: |
+          function Write-ProvisioningLog {
+            param([string]$Stage, [string]$Message)
+            Write-Host "[$([DateTime]::UtcNow.ToString('o'))] [$Stage] $Message"
+          }
           . ./test/infrastructure/Invoke-BoundedProcess.ps1
           $script = (Resolve-Path ./test/infrastructure/Invoke-SsasPowerShell7Integration.ps1).Path
           $logs = [IO.Path]::GetFullPath("$env:ARTIFACT_DIRECTORY/powershell7")

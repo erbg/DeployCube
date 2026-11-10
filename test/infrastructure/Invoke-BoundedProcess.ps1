@@ -21,6 +21,10 @@ function Invoke-BoundedProcess {
         [string]$ObservedDirectory
     )
 
+    if (-not (Get-Command -Name Write-ProvisioningLog -ErrorAction SilentlyContinue)) {
+        throw "Write-ProvisioningLog must be available before starting a bounded process."
+    }
+
     $startInfo = New-Object System.Diagnostics.ProcessStartInfo
     $startInfo.FileName = $FilePath
     $startInfo.Arguments = $ArgumentList -join ' '

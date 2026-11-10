@@ -136,7 +136,7 @@ even when a workflow step fails.
 
 | PowerShell / SSAS mode | Model level | Real deployment | Full processing | DAX/MDX result | Cleanup | Evidence |
 |---|---:|---|---|---|---|---|
-| 7.4.22 / Tabular | 1500 | Not tested | Not tested | Not tested | Not tested | [run 42784595667](https://github.com/erbg/DeployCube/actions/runs/42784595667) blocked by SSMS installation |
+| 7.4.22 / Tabular | 1500 | Unverified | Unverified | Unverified | Unverified | [run 42784595667](https://github.com/erbg/DeployCube/actions/runs/42784595667) blocked by SSMS installation; [run 42790406735](https://github.com/erbg/DeployCube/actions/runs/42790406735) blocked by a test harness failure |
 | 7.4.22 / Multidimensional | 1100 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
 | 7.5.13 / Tabular | 1500 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
 | 7.5.13 / Multidimensional | 1100 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
@@ -527,6 +527,17 @@ prior successful configuration, **not proof** that path length or relative
 `TEMP` caused the failure: the bootstrapper version and runner image also
 differ, and the available logs do not establish an exception cause or a
 conflict with preinstalled Visual Studio components.
+
+[Run 42790406735](https://github.com/erbg/DeployCube/actions/runs/42790406735)
+installed the same SSMS bootstrapper version successfully using the short
+temporary path, then installed SSAS and provisioned the SQL source. The runner
+was elevated and had 78 GiB free before SSMS installation. This supports the
+mitigation but still does not establish why the earlier bootstrapper failed.
+The PowerShell 7 test step then failed because its bounded-process helper
+called an undefined logging function after starting the child. Cleanup ran,
+but could race that child; the run provides no reliable deployment, processing
+or query result. The workflow now supplies the logger, and the helper refuses
+to start a process if the logger is missing.
 
 For future Phase I runs, the workflow captures `vswhere` instance inventory and
 installer-process information before and after setup, alongside OS, elevation,

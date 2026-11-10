@@ -136,7 +136,7 @@ even when a workflow step fails.
 
 | PowerShell / SSAS mode | Model level | Real deployment | Full processing | DAX/MDX result | Cleanup | Evidence |
 |---|---:|---|---|---|---|---|
-| 7.4.22 / Tabular | 1500 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
+| 7.4.22 / Tabular | 1500 | Not tested | Not tested | Not tested | Not tested | [run 42784595667](https://github.com/erbg/DeployCube/actions/runs/42784595667) blocked by SSMS installation |
 | 7.4.22 / Multidimensional | 1100 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
 | 7.5.13 / Tabular | 1500 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
 | 7.5.13 / Multidimensional | 1100 | Not tested | Not tested | Not tested | Not tested | No workflow run recorded yet |
@@ -507,6 +507,38 @@ Utility paths recorded by the real inventory:
 Each cell passed **31 infrastructure guard tests** and **3 real integration tests** (9/9 real integration tests in total). The direct probe checked database existence and compatibility 1500 and removed its separate database. The DeployCube tests independently deployed the checked-in fixture, verified database existence and compatibility 1500, and verified database absence after real `Unpublish-Cube`. Media was dismounted/deleted, and diagnostics were uploaded in all cells. This does not certify external data sources, processing, other compatibility levels, or other SSAS versions/modes.
 
 #### Installer investigation, separate from utility compatibility
+
+[Run 42784595667](https://github.com/erbg/DeployCube/actions/runs/42784595667)
+was blocked during SSMS 22 installation, before SSAS setup or any PowerShell 7
+DeployCube operation. The signed bootstrapper `18.11.12328.437` extracted
+successfully, then `vs_setup_bootstrapper.exe` exited with `0x8013153B`.
+Redirected stdout contains extraction output and stderr is empty. The captured
+Application events show the Visual Studio Setup Test MSI completed successfully;
+they do not identify the later bootstrapper exception. The run had approximately
+81 GiB free on the system drive.
+
+The Phase I installer passed a relative artifact directory as `TEMP` and `TMP`;
+the extraction log shows it resolved under the long checkout path. In contrast,
+the previously successful [2022 Tabular processing run 40895275965](https://github.com/erbg/DeployCube/actions/runs/40895275965)
+used the short absolute `RUNNER_TEMP/ssms-22-logs` path and bootstrapper
+`18.11.12324.101`. Phase I now uses the same short-path configuration already
+used by phases D through H2. This is a targeted mitigation supported by the
+prior successful configuration, **not proof** that path length or relative
+`TEMP` caused the failure: the bootstrapper version and runner image also
+differ, and the available logs do not establish an exception cause or a
+conflict with preinstalled Visual Studio components.
+
+For future Phase I runs, the workflow captures `vswhere` instance inventory and
+installer-process information before and after setup. It also collects recent
+setup, bootstrapper and precheck logs from the installer temp directory, user,
+runner and Windows temp directories, and Visual Studio setup/installer log
+locations. Application, System and available Visual Studio event logs are
+captured after the attempt, including on failure. The artifact includes a
+source-path inventory and reports collection errors rather than silently
+claiming complete diagnostics. These logs can contain runner paths and system
+details and should be handled as diagnostic artifacts. SSAS compatibility is
+still unverified until a full live deployment, processing, query and cleanup
+run succeeds.
 
 [Run 40689319575](https://github.com/erbg/DeployCube/actions/runs/40689319575) passed the SSMS 20 baseline but failed to install SSMS 21 and 22 with `-2146233029` (`0x8013153B`) after **38.20 s** and **63.15 s**, respectively. Their decompression logs showed successful extraction followed by failure in the extracted Visual Studio bootstrapper, before SSAS installation or utility execution. Both runners had 81 GB free. These are installer failures, not utility/server incompatibility.
 

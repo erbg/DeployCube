@@ -170,6 +170,13 @@ jobs:
             -IsoPath $env:ISO_PATH -SsasVersion $env:COMPAT_SSAS_VERSION `
             -LogDirectory "$env:ARTIFACT_DIRECTORY/media"
 
+      - name: Capture Visual Studio installer baseline
+        if: success() && inputs.scope == 'phase-i-powershell7'
+        shell: powershell
+        run: |
+          ./test/infrastructure/Get-SsmsInstallerDiagnostics.ps1 `
+            -OutputDirectory "$env:ARTIFACT_DIRECTORY/ssms-diagnostics" -Phase Before
+
       - name: Install SSMS ${{ matrix.ssms_major }}
         id: install-ssms
         if: success() && inputs.scope != 'media-only'
@@ -177,7 +184,7 @@ jobs:
         shell: powershell
         run: |
           $logDirectory = "$env:ARTIFACT_DIRECTORY/ssms-installation"
-          if ('${{ inputs.scope }}' -in @('phase-d', 'phase-e', 'phase-f', 'phase-g', 'phase-g2', 'phase-h', 'phase-h2')) {
+          if ('${{ inputs.scope }}' -in @('phase-d', 'phase-e', 'phase-f', 'phase-g', 'phase-g2', 'phase-h', 'phase-h2', 'phase-i-powershell7')) {
             $logDirectory = Join-Path $env:RUNNER_TEMP "ssms-$env:COMPAT_SSMS_MAJOR-logs"
           }
           try {
@@ -187,11 +194,20 @@ jobs:
               -MinimumFreeSpaceGB 8
           }
           finally {
-            if ('${{ inputs.scope }}' -in @('phase-d', 'phase-e', 'phase-f', 'phase-g', 'phase-g2', 'phase-h', 'phase-h2') -and (Test-Path -LiteralPath $logDirectory)) {
+            if ('${{ inputs.scope }}' -in @('phase-d', 'phase-e', 'phase-f', 'phase-g', 'phase-g2', 'phase-h', 'phase-h2', 'phase-i-powershell7') -and (Test-Path -LiteralPath $logDirectory)) {
               New-Item -ItemType Directory -Path "$env:ARTIFACT_DIRECTORY/ssms-installation" -Force | Out-Null
               Copy-Item -Path (Join-Path $logDirectory '*') -Destination "$env:ARTIFACT_DIRECTORY/ssms-installation" -Recurse -Force -ErrorAction Stop
             }
           }
+
+      - name: Capture Visual Studio installer diagnostics
+        if: always() && inputs.scope == 'phase-i-powershell7' && steps.install-ssms.outcome != 'skipped'
+        timeout-minutes: 5
+        shell: powershell
+        run: |
+          ./test/infrastructure/Get-SsmsInstallerDiagnostics.ps1 `
+            -OutputDirectory "$env:ARTIFACT_DIRECTORY/ssms-diagnostics" -Phase After `
+            -InstallerTempDirectory (Join-Path $env:RUNNER_TEMP "ssms-$env:COMPAT_SSMS_MAJOR-logs")
 
       - name: Capture SSMS installer failure events
         if: always() && steps.install-ssms.outcome == 'failure'
